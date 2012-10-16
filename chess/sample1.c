@@ -16,7 +16,7 @@ int main()
     pthread_t thread;
     pthread_create(&thread, NULL, thread2, NULL); 
      // printf("The ID of this thread is: %u\n", (unsigned int)pthread_self());
-        printf("JOINCALL: %ld\n",(long)thread);
+       // printf("JOINCALL: %ld\n",(long)thread);
      thread1(0);
     pthread_join(thread, NULL);
     
@@ -25,29 +25,33 @@ int main()
 
 void* thread1(void* arg)
 {
-printf("START 1: %ld\n",(long)pthread_self());
-	sleep(1);
+//printf("START 1: %ld\n",(long)pthread_self());
+	sleep(2);
     puts ("thread1-1");
     pthread_mutex_lock(&mutex1);
     puts ("thread1-2");
+    sleep(3);
     sched_yield();
     pthread_mutex_lock(&mutex2);
     puts ("thread1-3");
     pthread_mutex_unlock(&mutex2);
+    sleep(1);
     puts ("thread1-4");
     pthread_mutex_unlock(&mutex1);
 }
 
 void* thread2(void* arg)
 {
-	printf("START 2: %ld\n",(long)pthread_self());
+	//printf("START 2: %ld\n",(long)pthread_self());
+	//sleep(2);
     puts ("thread2-1");
     pthread_mutex_lock(&mutex2);
     puts ("thread2-2");
-    sleep(2);
+    //sleep(2);
     sched_yield();
     pthread_mutex_unlock(&mutex2);
     puts ("thread2-3");
+    sleep(3);
     pthread_mutex_lock(&mutex1);
     puts ("thread2-4");
     pthread_mutex_unlock(&mutex1);

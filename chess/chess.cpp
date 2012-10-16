@@ -40,6 +40,7 @@ struct Thread_Arg {
 static
 void* thread_main(void *arg)
 {
+	
     struct Thread_Arg thread_arg = *(struct Thread_Arg*)arg;
     free(arg);
     //printf("thread MAIN: %ld\n",(long)pthread_self());
@@ -57,6 +58,7 @@ int pthread_create(pthread_t *thread, const pthread_attr_t *attr,
                    void *(*start_routine)(void*), void *arg)
 {
     initialize_original_functions();
+    //original_pthread_mutex_unlock(&global_lock);
     struct Thread_Arg *thread_arg = (struct Thread_Arg*)malloc(sizeof(struct Thread_Arg));
     thread_arg->start_routine = start_routine;
     thread_arg->arg = arg;
@@ -65,7 +67,7 @@ int pthread_create(pthread_t *thread, const pthread_attr_t *attr,
     	firstrun = 0;
     	original_pthread_mutex_lock(&global_lock);
     	gl_holder = (long)pthread_self();
-    	printf("firstrun self: %ld\n",(long)pthread_self());
+    	//printf("firstrun self: %ld\n",(long)pthread_self());
     	//printf("firstrun thread: %ld\n",(long)thread);
     	thread_list[gl_holder] = 1;
     	
@@ -76,14 +78,14 @@ int pthread_create(pthread_t *thread, const pthread_attr_t *attr,
     //thread_list[(long)thread] = 1;
     
     
-
+    //original_pthread_mutex_lock(&global_lock);
     return ret;
 }
 
 extern "C"
 int pthread_join(pthread_t joinee, void **retval)
 {
-	printf("Join Called\n");
+	//printf("Join Called\n");
     initialize_original_functions();
     long cur_t = (long)pthread_self();
     original_pthread_mutex_unlock(&global_lock);
@@ -95,12 +97,12 @@ int pthread_join(pthread_t joinee, void **retval)
 		break;
 	}
     }
-    printf("%ld: waiting for: %ld to join\n",cur_t,(long)joinee);
+    //printf("%ld: waiting for: %ld to join\n",cur_t,(long)joinee);
     while(thread_list[(long)joinee] != 3)
     {
 		//busy wait
     }
-    printf("%ld: joined with %ld\n",cur_t, (long)joinee);
+    //printf("%ld: joined with %ld\n",cur_t, (long)joinee);
     thread_list[cur_t] = 1;
     original_pthread_mutex_lock(&global_lock);
     return original_pthread_join(joinee, retval);
@@ -115,40 +117,40 @@ int pthread_mutex_lock(pthread_mutex_t *mutex)
     std::queue<long> &mutex_queue = mutex_queue_list[mutex];
     //printf("Mutex Queue List contains %d queues\n",mutex_queue_list.size());
     
-    printf("mutex lock front of queue before push: %ld : Size: %d\n", mutex_queue.front(),mutex_queue.size());
-    printf("mutex lock pushing: %ld\n", cur_t);
+    //printf("mutex lock front of queue before push: %ld : Size: %d\n", mutex_queue.front(),mutex_queue.size());
+   // printf("mutex lock pushing: %ld\n", cur_t);
     mutex_queue.push(cur_t);
-    printf("mutex lock front of queue after push: %ld : Size: %d\n", mutex_queue.front(),mutex_queue.size());
+    //printf("mutex lock front of queue after push: %ld : Size: %d\n", mutex_queue.front(),mutex_queue.size());
     m_itr = mutex_list.find(mutex);
     if((mutex_queue.front() != cur_t) || (m_itr != mutex_list.end()))
     {
-    	printf("front mutex lock: %ld\n", mutex_queue.front());
+    	//printf("front mutex lock: %ld\n", mutex_queue.front());
     	//printf("test mutex queue list: %ld\n",mutex_queue.front()); 
 	original_pthread_mutex_unlock(&global_lock);
 	thread_list[cur_t] = 2;
 	for(t_itr = thread_list.begin(); t_itr != thread_list.end(); t_itr++)
 	{
-		printf("%ld: lock: searching for thread: %ld\n", cur_t,t_itr->first);
+		//printf("%ld: lock: searching for thread: %ld\n", cur_t,t_itr->first);
 		if(t_itr->first != cur_t && t_itr->second == 1)
 		{
-			printf("%ld: lock: switching to: %ld\n", cur_t,t_itr->first);
+			//printf("%ld: lock: switching to: %ld\n", cur_t,t_itr->first);
 			gl_holder = t_itr->first;
 			break;
 		}
 		else
 		{
-			printf("%ld: lock: not switching\n", cur_t);
+			//printf("%ld: lock: not switching\n", cur_t);
 			gl_holder = cur_t;
 		}
 	}
-	printf("%ld: waiting for lock\n",cur_t);
+	//printf("%ld: waiting for lock\n",cur_t);
 	m_itr = mutex_list.find(mutex);	
 	while(mutex_queue.front() != cur_t || (m_itr != mutex_list.end()))
 	{
 		m_itr = mutex_list.find(mutex);
 		//busy wait
 	}
-	printf("%ld: done waiting for lock\n",cur_t);
+	//printf("%ld: done waiting for lock\n",cur_t);
 	mutex_list[mutex] = cur_t;
 	thread_list[cur_t] = 1;
 	
@@ -157,7 +159,7 @@ int pthread_mutex_lock(pthread_mutex_t *mutex)
     }
     else
     {
-    	    printf("%ld: didnt wait for lock\n", cur_t); 
+    	    //printf("%ld: didnt wait for lock\n", cur_t); 
     	 mutex_list[mutex] = cur_t;
 	 rc = original_pthread_mutex_lock(mutex);	    
     }
@@ -172,18 +174,18 @@ int pthread_mutex_unlock(pthread_mutex_t *mutex)
     long cur_t = (long)pthread_self();
     original_pthread_mutex_unlock(&global_lock);
     std::queue<long> &mutex_queue = mutex_queue_list[mutex];
-    printf("%ld: unlocking\n", cur_t);
+    //printf("%ld: unlocking\n", cur_t);
     if(mutex_list[mutex] == cur_t)
     {	    
 	    rc = original_pthread_mutex_unlock(mutex);
 	    mutex_queue.pop();   
 	    gl_holder = cur_t;
 	    mutex_list.erase(mutex);
-	    printf("%ld: unlocked\n", cur_t);
+	    //printf("%ld: unlocked\n", cur_t);
     }
     else
     {
-    printf("%ld: unlocking FAILED\n", cur_t);
+    //printf("%ld: unlocking FAILED\n", cur_t);
     //printf("%ld: unlocking FAILED\n", cur_t);
     }
     original_pthread_mutex_lock(&global_lock);
@@ -195,24 +197,24 @@ int sched_yield(void)
 {
     long cur_t = (long)pthread_self();
     original_pthread_mutex_unlock(&global_lock);
-    printf("%ld: yielding\n", cur_t);
+    //printf("%ld: yielding\n", cur_t);
     //printf("thread queue size: %d\n", thread_list.size());
     for(t_itr = thread_list.begin(); t_itr != thread_list.end(); t_itr++)
     {
-    	    printf("%ld: yield: searching for thread: %ld\n", cur_t,t_itr->first);
+    	    //printf("%ld: yield: searching for thread: %ld\n", cur_t,t_itr->first);
 	if(t_itr->first != cur_t && t_itr->second == 1)
 	{
-		printf("%ld: yield: switching to: %ld\n", cur_t,t_itr->first);
+		//printf("%ld: yield: switching to: %ld\n", cur_t,t_itr->first);
 		gl_holder = t_itr->first;
 		break;
 	}
     }
-    original_pthread_mutex_lock(&global_lock);
+    //original_pthread_mutex_lock(&global_lock);
     while(gl_holder != cur_t)
     {
 		//busy wait
     }
-    
+    //original_pthread_mutex_lock(&global_lock);
     return 0;
 }
 
