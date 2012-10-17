@@ -52,12 +52,9 @@ void* thread_main(void *arg)
     original_pthread_mutex_lock(&global_lock);
     void* rc = thread_arg.start_routine(thread_arg.arg);
     thread_list[(long)pthread_self()] = 3;
-    if(thread_list.size() < 2)
-    {
-        FILE* sync = fopen("syncs", "w");
-        fprintf(sync, "%d\n", sync_count);
-        fclose(sync);
-    }
+    FILE* sync = fopen("syncs", "w");
+    fprintf(sync, "%d\n", sync_count);
+    fclose(sync);
     
     //original_pthread_mutex_unlock(&global_lock);
     original_pthread_mutex_unlock(&global_lock);
