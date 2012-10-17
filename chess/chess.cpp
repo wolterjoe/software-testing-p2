@@ -51,18 +51,18 @@ void* thread_main(void *arg)
         threads[1] = (long)pthread_self();
         me = 1;
     }
+
     original_pthread_mutex_lock(&global_lock);
     gl_holder = (long)pthread_self();
+    chess_schedule();
     void* rc = thread_arg.start_routine(thread_arg.arg);
     status[me] = 3;
-    FILE* sync = fopen("syncs", "w");
-    fprintf(sync, "%d\n", sync_count);
-    fclose(sync);
+
     
     
     //original_pthread_mutex_unlock(&global_lock);
     original_pthread_mutex_unlock(&global_lock);
-
+    fprintf(stderr, "exiting");
     return rc;
 }
 
@@ -104,6 +104,7 @@ int pthread_create(pthread_t *thread, const pthread_attr_t *attr,
     //original_pthread_mutex_lock(&global_lock);
 
     chess_schedule();
+    //fprintf(stderr, "exiting2");
     return ret;
 }
 
@@ -136,6 +137,9 @@ int pthread_join(pthread_t joinee, void **retval)
     //printf("%ld: joined with %ld\n",cur_t, (long)joinee);
     status[me] = 1;
     original_pthread_mutex_lock(&global_lock);
+    FILE* sync = fopen("syncs", "w");
+    fprintf(sync, "%d\n", sync_count);
+    fclose(sync);
     return original_pthread_join(joinee, retval);
 }
 
@@ -189,7 +193,10 @@ int pthread_mutex_unlock(pthread_mutex_t *mutex)
 extern "C"
 int sched_yield(void)
 {
+    if(status[0] == 3 || status[1] == 3)
+        return 0;
     long cur_t = (long)pthread_self();
+
     if(threads[0] == cur_t)
     {
         gl_holder = threads[1];
