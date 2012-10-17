@@ -121,11 +121,13 @@ int pthread_join(pthread_t joinee, void **retval)
         gl_holder = threads[1];
         other = 1;
         me = 0;
+        status[0] = 3;
     }else
     {
         gl_holder = threads[0];
         other = 0;
         me =1;
+        status[1] = 3;
     }
     original_pthread_mutex_unlock(&global_lock);
 
