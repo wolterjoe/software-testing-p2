@@ -51,13 +51,22 @@ void* thread_main(void *arg)
     thread_list[(long)pthread_self()] = 1;
     original_pthread_mutex_lock(&global_lock);
     //chess_schedule();
+    fprintf(stderr, "%s\n", "here");
     void* rc = thread_arg.start_routine(thread_arg.arg);
     thread_list[(long)pthread_self()] = 3;
-    FILE* sync = fopen("syncs", "w");
-    fprintf(sync, "%d\n", sync_count);
-    fclose(sync);
+
     
     //original_pthread_mutex_unlock(&global_lock);
+    for(t_itr = thread_list.begin(); t_itr != thread_list.end(); t_itr++)
+    {
+            //printf("%ld: yield: searching for thread: %ld\n", cur_t,t_itr->first);
+        if(t_itr->first != (long)pthread_self() && t_itr->second == 1)
+        {
+            //printf("%ld: yield: switching to: %ld\n", cur_t,t_itr->first);
+            gl_holder = t_itr->first;
+            break;
+        }
+    }
     original_pthread_mutex_unlock(&global_lock);
 
     return rc;
@@ -85,14 +94,14 @@ int pthread_create(pthread_t *thread, const pthread_attr_t *attr,
     	
     }
     int ret = original_pthread_create(thread, attr, thread_main, thread_arg);  
-    
+    chess_schedule();
     // TODO   
     //thread_list[(long)thread] = 1;
     
     
     //original_pthread_mutex_lock(&global_lock);
 
-    chess_schedule();
+    
     return ret;
 }
 
@@ -102,6 +111,7 @@ int pthread_join(pthread_t joinee, void **retval)
 	//printf("Join Called\n");
     initialize_original_functions();
     long cur_t = (long)pthread_self();
+    thread_list[cur_t] = 3;
     original_pthread_mutex_unlock(&global_lock);
     for(t_itr = thread_list.begin(); t_itr != thread_list.end(); t_itr++)
     {
@@ -118,6 +128,9 @@ int pthread_join(pthread_t joinee, void **retval)
     }
     //printf("%ld: joined with %ld\n",cur_t, (long)joinee);
     thread_list[cur_t] = 1;
+    FILE* sync = fopen("syncs", "w");
+    fprintf(sync, "%d\n", sync_count);
+    fclose(sync);
     original_pthread_mutex_lock(&global_lock);
     return original_pthread_join(joinee, retval);
 }
@@ -226,8 +239,9 @@ int sched_yield(void)
     		break;
     	}
     }
+    
     //original_pthread_mutex_lock(&global_lock);
-    while(gl_holder != cur_t && thread_list.size() > 1)
+    while(gl_holder != cur_t)
     {
 		//busy wait
     }
@@ -256,6 +270,7 @@ void initialize_original_functions()
 extern "C"
 void chess_schedule(void)
 {
+    initialize_original_functions();
     static int interrupt = -1;
     if(sync_count == 0)
     {
@@ -266,10 +281,16 @@ void chess_schedule(void)
             fclose(syncfile);
         }
     }
+
     if(interrupt == sync_count)
     {
+        sync_count++;
         sched_yield();
+        //fprintf(stderr, "%d%d\n", interrupt, sync_count);
+    }else
+    {
+        sync_count++;
     }
-    sync_count++;
+    
 }
 
