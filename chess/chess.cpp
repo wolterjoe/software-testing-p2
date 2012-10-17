@@ -25,14 +25,8 @@ FILE* syncfile = NULL;
 int firstrun = 1;
 long gl_holder = 0; //thread with global lock
 
-std::map< long, int > thread_list; //threadID, state of thread
-std::map< long, int >::iterator t_itr;
+long threads[2] = {0,0};
 
-std::map< pthread_mutex_t*, std::queue<long> > mutex_queue_list; //lock, threadID of lock owner
-std::map< pthread_mutex_t*, std::queue<long> >::iterator l_itr;
-
-std::map< pthread_mutex_t*, long > mutex_list;
-std::map< pthread_mutex_t*, long >::iterator m_itr;
 
 static void initialize_original_functions();
 
@@ -48,16 +42,20 @@ void* thread_main(void *arg)
     struct Thread_Arg thread_arg = *(struct Thread_Arg*)arg;
     free(arg);
     //printf("thread MAIN: %ld\n",(long)pthread_self());
-    thread_list[(long)pthread_self()] = 1;
-    original_pthread_mutex_lock(&global_lock);
-    void* rc = thread_arg.start_routine(thread_arg.arg);
-    thread_list[(long)pthread_self()] = 3;
-    if(thread_list.size() < 2)
+    if(threads[0] == 0)
     {
-        FILE* sync = fopen("syncs", "w");
-        fprintf(sync, "%d\n", sync_count);
-        fclose(sync);
+        threads[0] = (long)pthread_self();
+    }else
+    {
+        threads[1] = (long)pthread_self();
     }
+    original_pthread_mutex_lock(&global_lock);
+    gl_holder = (long)pthread_self();
+    void* rc = thread_arg.start_routine(thread_arg.arg);
+    FILE* sync = fopen("syncs", "w");
+    fprintf(sync, "%d\n", sync_count);
+    fclose(sync);
+    
     
     //original_pthread_mutex_unlock(&global_lock);
     original_pthread_mutex_unlock(&global_lock);
@@ -229,7 +227,7 @@ int sched_yield(void)
     	}
     }
     //original_pthread_mutex_lock(&global_lock);
-    while(gl_holder != cur_t && thread_list.size() > 1)
+    while(gl_holder != cur_t)
     {
 		//busy wait
     }
