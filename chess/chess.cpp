@@ -50,6 +50,7 @@ void* thread_main(void *arg)
     //printf("thread MAIN: %ld\n",(long)pthread_self());
     thread_list[(long)pthread_self()] = 1;
     original_pthread_mutex_lock(&global_lock);
+    //chess_schedule();
     void* rc = thread_arg.start_routine(thread_arg.arg);
     thread_list[(long)pthread_self()] = 3;
     FILE* sync = fopen("syncs", "w");

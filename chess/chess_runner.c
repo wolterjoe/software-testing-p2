@@ -4,6 +4,8 @@
 
 void main(int argc, char** argv)
 {
+	int ret = system("rm syncfile");
+	ret = system("rm syncs");
 	char* program;
 	if (argc != 2)
 	{
@@ -18,7 +20,7 @@ void main(int argc, char** argv)
 	//strncat(buf, " > /dev/null", strlen(" > /dev/null"));
 	//printf("%s", buf);
 	fprintf(stderr, "Recording Synchronization Points...\n");
-	int ret = system(buf);
+	ret = system(buf);
 
 	int synclen = 0;
 	FILE* read = fopen("syncs", "r");
