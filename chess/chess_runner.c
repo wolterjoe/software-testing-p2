@@ -17,7 +17,7 @@ void main(int argc, char** argv)
 	//printf("%s", buffer);
 	strcat(buf, "./run.sh ");
 	strncat(buf, program, strlen(program));
-	//strncat(buf, " > /dev/null", strlen(" > /dev/null"));
+	strncat(buf, " > output.txt", strlen(" > output.txt"));
 	//printf("%s", buf);
 	fprintf(stderr, "Recording Synchronization Points...\n");
 	ret = system(buf);
@@ -35,8 +35,12 @@ void main(int argc, char** argv)
 			FILE* write = fopen("syncfile", "w");
 			fprintf(write, "%d\n", i);
 			fclose(write);
-			fprintf(stderr, "Running Test %d of %d...\n", i, synclen - 1);
+			fprintf(stderr, "Running Test %d of %d...\n", i + 1, synclen);
 			int ret = system(buf);
+			if(ret != 0 )
+			{
+				fprintf(stderr, "Test %d exited with error code %d.\n", i + 1, ret);
+			}
 		}
 	}else
 	{
