@@ -50,7 +50,6 @@ void* thread_main(void *arg)
     //printf("thread MAIN: %ld\n",(long)pthread_self());
     thread_list[(long)pthread_self()] = 1;
     original_pthread_mutex_lock(&global_lock);
-    //chess_schedule();
     void* rc = thread_arg.start_routine(thread_arg.arg);
     thread_list[(long)pthread_self()] = 3;
 
@@ -94,11 +93,6 @@ int pthread_create(pthread_t *thread, const pthread_attr_t *attr,
     }
     int ret = original_pthread_create(thread, attr, thread_main, thread_arg);  
     chess_schedule();
-    // TODO   
-    //thread_list[(long)thread] = 1;
-    
-    
-    //original_pthread_mutex_lock(&global_lock);
 
     
     return ret;
@@ -200,7 +194,6 @@ int pthread_mutex_unlock(pthread_mutex_t *mutex)
     initialize_original_functions();
     int rc = -1;
     long cur_t = (long)pthread_self();
-    //original_pthread_mutex_unlock(&global_lock);
     std::queue<long> &mutex_queue = mutex_queue_list[mutex];
     //printf("%ld: unlocking\n", cur_t);
     if(mutex_list[mutex] == cur_t)
@@ -211,12 +204,6 @@ int pthread_mutex_unlock(pthread_mutex_t *mutex)
         mutex_list.erase(mutex);
         //printf("%ld: unlocked\n", cur_t);
     }
-    else
-    {
-    //printf("%ld: unlocking FAILED\n", cur_t);
-    //printf("%ld: unlocking FAILED\n", cur_t);
-    }
-    //original_pthread_mutex_lock(&global_lock);
     chess_schedule();
     return rc;
 }
