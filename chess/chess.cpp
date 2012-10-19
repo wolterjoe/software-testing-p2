@@ -232,6 +232,7 @@ int sched_yield(void)
         //busy wait
     }
     original_pthread_mutex_lock(&global_lock);
+    //chess_schedule();
     return 0;
 }
 
